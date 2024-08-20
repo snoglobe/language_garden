@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>🌱 language garden</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+            body,
+            html {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                color: white;
+                background-color: #10170c;
+                font-family: "Space Mono", monospace;
+                font-size: 14px;
+            }
+            .container {
+                display: flex;
+                height: 100%;
+            }
+            .left-panel {
+                display: flex;
+                flex-direction: column;
+                width: 60%;
+                min-width: 200px;
+            }
+            .tab-bar {
+                display: flex;
+                background-color: #10170c;
+                border-bottom: 1px solid #7bd14d;
+            }
+            .tab {
+                padding: 3px;
+                font-size: 12px;
+                cursor: pointer;
+                border-right: 1px solid #7bd14d;
+            }
+            .tab.active {
+                background-color: #283d1c;
+            }
+            #editor {
+                flex-grow: 1;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .cm-editor {
+                height: 100%;
+            }
+
+            .cm-scroller {
+                overflow: auto;
+            }
+            #editor_txt {
+                height: 100%;
+            }
+            .console-container {
+                display: flex;
+                flex-direction: column;
+                height: 30%;
+                min-height: 100px;
+            }
+            #execute-btn {
+                padding: 3px;
+                background-color: #10170c;
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-family: "Space Mono", monospace;
+            }
+            #console {
+                flex-grow: 1;
+                border-top: 1px solid #7bd14d;
+                padding: 10px;
+                overflow-y: auto;
+                background-color: #10170c;
+            }
+            .right-panel {
+                width: 40%;
+                min-width: 200px;
+                display: flex;
+                flex-direction: column;
+            }
+            #chat-history {
+                flex-grow: 1;
+                overflow-y: auto;
+                padding: 0;
+            }
+            #chat-input {
+                border-top: 1px solid #7bd14d;
+                padding: 10px;
+                display: flex;
+            }
+            #chat-input input {
+                flex-grow: 1;
+                margin-right: 10px;
+            }
+            .resizer-x {
+                width: 4px;
+                background: #10170c;
+                border-left: 1px solid #7bd14d;
+                border-right: 1px solid #7bd14d;
+                cursor: col-resize;
+            }
+            .resizer-y {
+                height: 4px;
+                background: #10170c;
+                border-top: 1px solid #7bd14d;
+                border-bottom: 1px solid #7bd14d;
+                cursor: row-resize;
+            }
+            #chat-message {
+                background: #10170c;
+                color: white;
+                border: none;
+                font-family: "Space Mono", monospace;
+            }
+            #send-chat {
+                background: #10170c;
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-family: "Space Mono", monospace;
+            }
+            .chat-message.llm {
+                padding: 5px;
+                margin-left: 0;
+                margin-right: 0;
+                border-bottom: 1px solid #7bd14d;
+            }
+            .chat-message.user {
+                padding: 5px;
+                margin-left: 0;
+                margin-right: 0;
+                border-bottom: 1px solid #7bd14d;
+                background-color: #1a2618;
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"></script>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+        />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.5/jshint.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/lint/lint.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/lint/javascript-lint.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/show-hint.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/javascript-hint.min.js"></script>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/lint/lint.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/show-hint.min.css"
+        />
+        <link rel="stylesheet" href="oceanic-next.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="left-panel">
+                <div class="tab-bar">
+                    <div class="tab active" data-file="intro">
+                        🌱 language garden
+                    </div>
+                    <div class="tab" data-file="basic.js">basic.js</div>
+                    <div class="tab" data-file="lisp.js">lisp.js</div>
+                    <div class="tab" data-file="mini_ml.js">mini_ml.js</div>
+                    <div class="tab" data-file="forth.js">forth.js</div>
+                </div>
+                <div id="editor"></div>
+                <div class="resizer-y"></div>
+                <div class="console-container">
+                    <button id="execute-btn">Execute</button>
+                    <div id="console"></div>
+                </div>
+            </div>
+            <div class="resizer-x"></div>
+            <div class="right-panel">
+                <div id="chat-history"></div>
+                <div id="chat-input">
+                    <input
+                        disabled
+                        type="text"
+                        id="chat-message"
+                        placeholder="Initializing..."
+                    />
+                    <button disabled id="send-chat">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <script type="module">
+            import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
+            const editor = document.getElementById("editor");
+            const consoleOutput = document.getElementById("console");
+            const chatHistory = document.getElementById("chat-history");
+            const chatInput = document.getElementById("chat-message");
+            const sendChatButton = document.getElementById("send-chat");
+            const executeButton = document.getElementById("execute-btn");
+            const tabs = document.querySelectorAll(".tab");
+            const leftPanel = document.querySelector(".left-panel");
+            const rightPanel = document.querySelector(".right-panel");
+            const consoleContainer =
+                document.querySelector(".console-container");
+            const resizerX = document.querySelector(".resizer-x");
+            const resizerY = document.querySelector(".resizer-y");
+
+            let editorView;
+            let activeFile = "intro";
+            const files = {
+                intro: {
+                    content: `
+/* welcome to the language garden! 🌱
+here you can explore a few tiny interpreter implementations, and ask an LLM about them on the right.
+language garden was made to help you learn about programming languages and interpreters.
+feel free to edit, add features, and experiment!
+
+note, if this is your first time coming to the page you'll have to wait a bit for the model to download.
+the hermes 2 pro 8b model runs in-browser using web-llm. you'll have to have webGPU support enabled or it won't work.
+
+in the language garden, there is:
+- basic.js: a simple interpreter for a basic language. very un-densely written for clarity.
+- lisp.js: a small and simple lisp interpreter.
+- mini_ml.js: a tiny interpreter for a subset of ML.
+- forth.js: a small forth interpreter.
+
+you can switch between these files using the tabs above. enjoy!
+*/
+                                        `.trim(),
+                    scroll: null,
+                },
+            };
+
+            for (const file of [
+                "basic.js",
+                "lisp.js",
+                "mini_ml.js",
+                "forth.js",
+            ]) {
+                fetch(file)
+                    .then((res) => res.text())
+                    .then((content) => {
+                        files[file] = { content: content.trim(), scroll: null };
+                    });
+            }
+
+            function createEditor(content) {
+                return CodeMirror(editor, {
+                    value: content,
+                    mode: "javascript",
+                    theme: "oceanic-next",
+                    lineNumbers: true,
+                    autoCloseBrackets: true,
+                    matchBrackets: true,
+                    indentUnit: 4,
+                    tabSize: 4,
+                    indentWithTabs: true,
+                    viewportMargin: Infinity,
+                    gutters: ["CodeMirror-lint-markers"],
+                    lint: {
+                        esversion: 11,
+                        asi: true,
+                    },
+                    extraKeys: { "Ctrl-Space": "autocomplete" },
+                });
+            }
+
+            // Initialize editor
+            editorView = createEditor(files[activeFile].content);
+
+            editorView.setSize(leftPanel.offsetWidth, editor.offsetHeight);
+
+            // Tab switching
+            tabs.forEach((tab) => {
+                tab.addEventListener("click", () => {
+                    tabs.forEach((t) => t.classList.remove("active"));
+                    tab.classList.add("active");
+                    files[activeFile].scroll = editorView.getScrollInfo();
+                    updateFileContent();
+                    activeFile = tab.dataset.file;
+                    editor.innerHTML = "";
+                    editorView = createEditor(files[activeFile].content);
+                    editorView.setSize(
+                        leftPanel.offsetWidth,
+                        editor.offsetHeight,
+                    );
+                    editorView.scrollTo(
+                        files[activeFile].scroll.left,
+                        files[activeFile].scroll.top,
+                    );
+                });
+            });
+
+            // Save file content
+            function updateFileContent() {
+                files[activeFile] = {
+                    content: editorView.getValue(),
+                    scroll: editorView.getScrollInfo(),
+                };
+            }
+
+            // Run code
+            function runCode() {
+                consoleOutput.innerHTML = "";
+                updateFileContent();
+                try {
+                    let old_console = console;
+                    {
+                        let console = {
+                            ...old_console,
+                            log: (...args) => {
+                                old_console.log(...args);
+                                consoleOutput.innerHTML += `<div>${args.map((arg) => arg.toString()).join(" ")}</div>`;
+                            },
+                        };
+                        eval(`(()=>{${files[activeFile].content}})()`);
+                    }
+                } catch (error) {
+                    consoleOutput.innerHTML += `<div style="color:#ff5e7e;">${error.toString().replace("\n", "<br>")}</div>`;
+                    throw error;
+                }
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+
+            // Execute button click handler
+            executeButton.addEventListener("click", runCode);
+
+            const initProgressCallback = (progress) => {
+                //console.log(progress);
+                if (progress.progress < 1) {
+                    sendChatButton.disabled = true;
+                    chatInput.disabled = true;
+                    chatInput.placeholder = progress.text;
+                } else {
+                    sendChatButton.disabled = false;
+                    chatInput.disabled = false;
+                    chatInput.placeholder = "Ask about your code...";
+                }
+            };
+
+            const selectedModel = "Hermes-2-Pro-Llama-3-8B-q4f32_1-MLC";
+            const appConfig = webllm.prebuiltAppConfig;
+            appConfig.useIndexedDBCache = true;
+            const engine = new webllm.MLCEngine({
+                initProgressCallback,
+                appConfig,
+            });
+            engine.reload(selectedModel);
+
+            let history = "";
+
+            // Chat functionality
+            sendChatButton.addEventListener("click", async () => {
+                const message = chatInput.value;
+                history += message + "\n";
+                if (message.trim()) {
+                    const messages = [
+                        {
+                            role: "system",
+                            content: `
+                                    You are a helpful AI assistant helping a user learn how programming languages are designed and implemented.
+                                    The user has written some code in JavaScript and your purpose is to answer questions about the code and help the user understand it.
+                                    It is important to be patient and provide helpful feedback to the user, and to encourage them to experiment and learn.
+                                    Make sure you describe the code and its behavior thoroughly, focus on why the code does what it does,
+                                    and provide helpful examples and analogies to help the user understand.
+                                    Don't list the entire codebase, but provide relevant parts of the code when necessary.
+                                    This is their code: \`\`\`${files[activeFile].content}\`\`\``,
+                        },
+                        { role: "user", content: history },
+                    ];
+                    let userMessageDiv = document.createElement("div");
+                    userMessageDiv.classList.add("chat-message", "user");
+                    userMessageDiv.innerHTML =
+                        new showdown.Converter().makeHtml(message);
+                    chatHistory.appendChild(userMessageDiv);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    chatInput.value = "";
+                    chatInput.placeholder = "Generating...";
+                    const chunks = await engine.chat.completions.create({
+                        messages,
+                        temperature: 1,
+                        stream: true, // <-- Enable streaming
+                        stream_options: { include_usage: true },
+                    });
+                    let resultDiv = document.createElement("div");
+                    resultDiv.classList.add("chat-message", "llm");
+                    chatHistory.appendChild(resultDiv);
+                    sendChatButton.disabled = true;
+                    let output = "";
+                    for await (const chunk of chunks) {
+                        console.log(chunk);
+                        output += chunk.choices[0]?.delta.content ?? "";
+                        resultDiv.innerHTML = new showdown.Converter().makeHtml(
+                            output,
+                        );
+                        chatHistory.scrollTop = chatHistory.scrollHeight;
+                    }
+                    history += output + "\n";
+                    sendChatButton.disabled = false;
+                    chatInput.placeholder = "Ask about your code...";
+                }
+            });
+
+            // Resizing functionality
+            function initResize(e, direction) {
+                e.preventDefault();
+                let startX = e.clientX;
+                let startY = e.clientY;
+                let startWidth = leftPanel.offsetWidth;
+                let startHeight = editor.offsetHeight;
+
+                function doResize(e) {
+                    if (direction === "x") {
+                        let newWidth = startWidth + e.clientX - startX;
+                        leftPanel.style.width = `${newWidth}px`;
+                        rightPanel.style.width = `calc(100% - ${newWidth}px)`;
+                    } else if (direction === "y") {
+                        let newHeight = startHeight + e.clientY - startY;
+                        editor.style.height = `${newHeight}px`;
+                        consoleContainer.style.height = `calc(100% - ${newHeight}px - 5px)`;
+                    }
+                    editorView.setSize(
+                        leftPanel.offsetWidth,
+                        editor.offsetHeight,
+                    );
+                }
+
+                function stopResize() {
+                    window.removeEventListener("mousemove", doResize);
+                    window.removeEventListener("mouseup", stopResize);
+                }
+
+                window.addEventListener("mousemove", doResize);
+                window.addEventListener("mouseup", stopResize);
+            }
+
+            resizerX.addEventListener("mousedown", (e) => initResize(e, "x"));
+            resizerY.addEventListener("mousedown", (e) => initResize(e, "y"));
+
+            // Add a resize observer to handle window resizing
+            const resizeObserver = new ResizeObserver(() => {
+                editorView.setSize(leftPanel.offsetWidth, editor.offsetHeight);
+            });
+            resizeObserver.observe(editor);
+        </script>
+    </body>
+</html>
